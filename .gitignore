@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# local environment files (not required, but ignored if created)
+.env
+.env.*
+
+# coverage / reports
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# local internal docs/notes
+.local/

@@ -1,0 +1,24 @@
+{
+  "name": "twitch-game-category-tracker",
+  "version": "1.0.0",
+  "description": "Monitor a Twitch game category and notify a webhook when streams go live.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "check": "node --check src/index.js",
+    "test:category": "node src/testCategoryLookup.js"
+  },
+  "keywords": [
+    "twitch",
+    "webhook",
+    "monitor",
+    "stream"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": "26.x"
+  }
+}
