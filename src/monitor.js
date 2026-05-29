@@ -13,10 +13,15 @@ class StreamMonitor {
     this.consecutiveMisses = new Map();
     this.hasBaseline = false;
     this.heartbeatLineActive = false;
+    this.resolveStopSignal = null;
+    this.stopSignal = null;
   }
 
   async start() {
     this.running = true;
+    this.stopSignal = new Promise((resolve) => {
+      this.resolveStopSignal = resolve;
+    });
     this.logEvent(`[tracker] Monitoring game_id=${this.gameId} every ${this.pollIntervalSeconds}s`);
 
     while (this.running) {
@@ -27,21 +32,20 @@ class StreamMonitor {
         console.error("[tracker] Poll error:", error.message);
       }
 
-      await delay(this.pollIntervalSeconds * 1000);
+      await Promise.race([delay(this.pollIntervalSeconds * 1000), this.stopSignal]);
     }
   }
 
   stop() {
     this.breakHeartbeatLine();
     this.running = false;
+    if (this.resolveStopSignal) {
+      this.resolveStopSignal();
+      this.resolveStopSignal = null;
+    }
   }
 
   emitHeartbeatDot() {
-    if (this.heartbeatLineActive) {
-      process.stdout.write(".");
-      return;
-    }
-
     process.stdout.write(".");
     this.heartbeatLineActive = true;
   }
@@ -86,12 +90,24 @@ class StreamMonitor {
       return !this.currentLiveUsers.has(userId);
     });
 
-    for (const stream of notifyCandidates) {
+    const notifyTasks = notifyCandidates.map(async (stream) => {
       await this.webhookClient.sendStreamLive({ stream, gameId: this.gameId });
       const timestamp = new Date().toISOString();
       const streamerName = stream.user_name || stream.user_login || "unknown_streamer";
       this.logEvent(`[tracker] ${timestamp} ${streamerName} has gone live! There are now ${streams.length} people playing!`);
-      hadVisibleChanges = true;
+      return true;
+    });
+
+    if (notifyTasks.length > 0) {
+      const results = await Promise.allSettled(notifyTasks);
+      if (results.some((result) => result.status === "fulfilled")) {
+        hadVisibleChanges = true;
+      }
+
+      const failed = results.find((result) => result.status === "rejected");
+      if (failed) {
+        throw failed.reason;
+      }
     }
 
     for (const userId of [...this.currentLiveUsers]) {

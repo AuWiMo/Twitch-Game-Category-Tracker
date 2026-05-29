@@ -1,3 +1,5 @@
+const { fetchWithTimeout } = require("./http");
+
 class WebhookClient {
   constructor({ webhookUrl, requestTimeoutMs = 15000 }) {
     this.webhookUrl = webhookUrl;
@@ -51,25 +53,21 @@ class WebhookClient {
       }
     };
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
-
-    try {
-      const response = await fetch(this.webhookUrl, {
+    const response = await fetchWithTimeout(
+      this.webhookUrl,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
+        body: JSON.stringify(payload)
+      },
+      this.requestTimeoutMs
+    );
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Webhook returned ${response.status}: ${text}`);
-      }
-    } finally {
-      clearTimeout(timeoutId);
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Webhook returned ${response.status}: ${text}`);
     }
   }
 }

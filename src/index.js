@@ -35,8 +35,8 @@ async function main() {
   });
 
   const gracefulShutdown = (signal) => {
-    const stopReason = signal === "SIGINT" ? "App manually stopped" : "App stopped by system";
-    console.log(`[tracker] ${stopReason}. Wrapping up now and shutting down safely...`);
+    const stopReason = signal === "SIGINT" ? "Manual stop requested" : "System stop requested";
+    console.log(`\n[tracker] ${stopReason}. Stopping monitor.`);
     monitor.stop();
   };
 

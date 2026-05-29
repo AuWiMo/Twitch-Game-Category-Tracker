@@ -135,28 +135,44 @@ Example (persist for your user):
 
 ## Webhook Payload
 
-The app sends `POST` JSON payloads like:
+The app sends Discord-compatible `POST` JSON payloads like:
 
 ```json
 {
-	"event": "stream.live",
-	"sentAt": "2026-05-29T10:00:00.000Z",
-	"gameId": "33214",
-	"stream": {
-		"id": "1234567890",
-		"userId": "987654321",
-		"userLogin": "example_streamer",
-		"userName": "ExampleStreamer",
-		"gameId": "33214",
-		"gameName": "Fortnite",
-		"title": "Ranked grind",
-		"type": "live",
-		"language": "en",
-		"viewerCount": 120,
-		"startedAt": "2026-05-29T09:58:20Z",
-		"thumbnailUrl": "https://static-cdn.jtvnw.net/...",
-		"tags": ["English"],
-		"twitchUrl": "https://www.twitch.tv/example_streamer"
+	"content": "LIVE: ExampleStreamer is now live in Fortnite",
+	"embeds": [
+		{
+			"title": "Ranked grind",
+			"url": "https://www.twitch.tv/example_streamer",
+			"description": "Watch ExampleStreamer on Twitch",
+			"fields": [
+				{
+					"name": "Category",
+					"value": "Fortnite",
+					"inline": true
+				},
+				{
+					"name": "Viewers",
+					"value": "120",
+					"inline": true
+				},
+				{
+					"name": "Language",
+					"value": "en",
+					"inline": true
+				}
+			],
+			"timestamp": "2026-05-29T09:58:20Z",
+			"image": {
+				"url": "https://static-cdn.jtvnw.net/..."
+			},
+			"footer": {
+				"text": "Streamer: example_streamer"
+			}
+		}
+	],
+	"allowed_mentions": {
+		"parse": []
 	}
 }
 ```

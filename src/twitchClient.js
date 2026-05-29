@@ -1,5 +1,6 @@
 const AUTH_URL = "https://id.twitch.tv/oauth2/token";
 const API_BASE_URL = "https://api.twitch.tv/helix";
+const { fetchWithTimeout } = require("./http");
 
 class TwitchClient {
   constructor({ clientId, clientSecret, requestTimeoutMs = 15000 }) {
@@ -22,7 +23,7 @@ class TwitchClient {
       grant_type: "client_credentials"
     });
 
-    const response = await this.fetchWithTimeout(AUTH_URL, {
+    const response = await fetchWithTimeout(AUTH_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded"
@@ -99,40 +100,22 @@ class TwitchClient {
   }
 
   async fetchHelix(url) {
-    let response = await this.fetchWithTimeout(url, {
+    const requestOptions = {
       method: "GET",
       headers: {
         Authorization: `Bearer ${this.appToken}`,
         "Client-Id": this.clientId
       }
-    });
+    };
+
+    let response = await fetchWithTimeout(url, requestOptions, this.requestTimeoutMs);
 
     // Twitch API guide recommends retrying once on 503.
     if (response.status === 503) {
-      response = await this.fetchWithTimeout(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${this.appToken}`,
-          "Client-Id": this.clientId
-        }
-      });
+      response = await fetchWithTimeout(url, requestOptions, this.requestTimeoutMs);
     }
 
     return response;
-  }
-
-  async fetchWithTimeout(url, options) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.requestTimeoutMs);
-
-    try {
-      return await fetch(url, {
-        ...options,
-        signal: controller.signal
-      });
-    } finally {
-      clearTimeout(timeoutId);
-    }
   }
 }
 
