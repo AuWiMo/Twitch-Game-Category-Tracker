@@ -80,6 +80,7 @@ function loadConfig() {
     twitchGameId: cliOverrides.twitchGameId || process.env.TWITCH_GAME_ID,
     twitchGameName: process.env.TWITCH_GAME_NAME,
     webhookUrl: cliOverrides.webhookUrl || process.env.WEBHOOK_URL,
+    discordPingRoleId: process.env.DISCORD_PING_ROLE_ID,
     pollIntervalSeconds: parsePositiveInt("POLL_INTERVAL_SECONDS", 60),
     requestTimeoutMs: parsePositiveInt("REQUEST_TIMEOUT_MS", 15000),
     startupNotifyExistingLive: (process.env.STARTUP_NOTIFY_EXISTING_LIVE || "false").toLowerCase() === "true"
@@ -99,6 +100,10 @@ function loadConfig() {
 
   if (!config.twitchGameId && !config.twitchGameName) {
     throw new Error("Set TWITCH_GAME_ID or TWITCH_GAME_NAME.");
+  }
+
+  if (config.discordPingRoleId !== undefined && config.discordPingRoleId !== "" && !/^\d+$/.test(config.discordPingRoleId)) {
+    throw new Error("DISCORD_PING_ROLE_ID must be a numeric Discord role ID.");
   }
 
   return config;

@@ -52,6 +52,7 @@ Optional:
 - `POLL_INTERVAL_SECONDS` (default: `60`)
 - `REQUEST_TIMEOUT_MS` (default: `15000`)
 - `STARTUP_NOTIFY_EXISTING_LIVE` (default: `false`)
+- `DISCORD_PING_ROLE_ID` (optional Discord role ID to ping at message start)
 
 ## Configure Environment (System Level)
 
@@ -62,6 +63,7 @@ $env:TWITCH_CLIENT_ID="your_client_id"
 $env:TWITCH_CLIENT_SECRET="your_client_secret"
 $env:WEBHOOK_URL="https://example.com/webhook"
 $env:TWITCH_GAME_ID="33214"
+$env:DISCORD_PING_ROLE_ID="1510395441395662959"
 ```
 
 Windows PowerShell (persist for your user):
@@ -71,6 +73,7 @@ Windows PowerShell (persist for your user):
 [Environment]::SetEnvironmentVariable("TWITCH_CLIENT_SECRET", "your_client_secret", "User")
 [Environment]::SetEnvironmentVariable("WEBHOOK_URL", "https://example.com/webhook", "User")
 [Environment]::SetEnvironmentVariable("TWITCH_GAME_ID", "33214", "User")
+[Environment]::SetEnvironmentVariable("DISCORD_PING_ROLE_ID", "1510395441395662959", "User")
 ```
 
 If you prefer to use name-based lookup instead, set `TWITCH_GAME_NAME` and omit `TWITCH_GAME_ID`.
@@ -139,7 +142,7 @@ The app sends Discord-compatible `POST` JSON payloads like:
 
 ```json
 {
-	"content": "LIVE: ExampleStreamer is now live in Fortnite",
+	"content": "<@&1510395441395662959> LIVE: ExampleStreamer is now live in Fortnite",
 	"embeds": [
 		{
 			"title": "Ranked grind",
@@ -172,10 +175,13 @@ The app sends Discord-compatible `POST` JSON payloads like:
 		}
 	],
 	"allowed_mentions": {
-		"parse": []
+		"parse": [],
+		"roles": ["1510395441395662959"]
 	}
 }
 ```
+
+If `DISCORD_PING_ROLE_ID` is not set, the message is sent without a role mention.
 
 ## API References Used
 

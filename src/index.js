@@ -23,6 +23,7 @@ async function main() {
 
   const webhookClient = new WebhookClient({
     webhookUrl: config.webhookUrl,
+    pingRoleId: config.discordPingRoleId,
     requestTimeoutMs: config.requestTimeoutMs
   });
 

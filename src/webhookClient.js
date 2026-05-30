@@ -1,8 +1,9 @@
 const { fetchWithTimeout } = require("./http");
 
 class WebhookClient {
-  constructor({ webhookUrl, requestTimeoutMs = 15000 }) {
+  constructor({ webhookUrl, pingRoleId, requestTimeoutMs = 15000 }) {
     this.webhookUrl = webhookUrl;
+    this.pingRoleId = pingRoleId;
     this.requestTimeoutMs = requestTimeoutMs;
   }
 
@@ -11,8 +12,10 @@ class WebhookClient {
     const streamerName = stream.user_name || streamerLogin;
     const twitchUrl = `https://www.twitch.tv/${streamerLogin}`;
 
+    const roleMentionPrefix = this.pingRoleId ? `<@&${this.pingRoleId}> ` : "";
+
     const payload = {
-      content: `LIVE: ${streamerName} is now live in ${stream.game_name || "Unknown Category"}`,
+      content: `${roleMentionPrefix}LIVE: ${streamerName} is now live in ${stream.game_name || "Unknown Category"}`,
       embeds: [
         {
           title: stream.title || "Stream is live",
@@ -49,7 +52,8 @@ class WebhookClient {
         }
       ],
       allowed_mentions: {
-        parse: []
+        parse: [],
+        roles: this.pingRoleId ? [this.pingRoleId] : []
       }
     };
 
