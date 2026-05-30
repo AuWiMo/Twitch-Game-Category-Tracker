@@ -14,6 +14,10 @@ class WebhookClient {
 
     const roleMentionPrefix = this.pingRoleId ? `<@&${this.pingRoleId}> ` : "";
 
+    console.log(
+      `[tracker] Discord role ping ${this.pingRoleId ? `enabled for role ${this.pingRoleId}` : "disabled"}.`
+    );
+
     const payload = {
       content: `${roleMentionPrefix}LIVE: ${streamerName} is now live in ${stream.game_name || "Unknown Category"}`,
       embeds: [
