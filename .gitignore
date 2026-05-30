@@ -22,3 +22,6 @@ Thumbs.db
 
 # local internal docs/notes
 .local/
+
+# private scripts
+scripts/docker-build.js
