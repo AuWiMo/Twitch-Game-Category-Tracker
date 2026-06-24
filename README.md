@@ -50,6 +50,8 @@ Required:
 Optional:
 
 - `POLL_INTERVAL_SECONDS` (default: `60`)
+- `OFFLINE_CONFIRMATION_POLLS` (default: `5`)
+- `LIVE_NOTIFY_DELAY_SECONDS` (default: `180`)
 - `REQUEST_TIMEOUT_MS` (default: `15000`)
 - `STARTUP_NOTIFY_EXISTING_LIVE` (default: `false`)
 - `DISCORD_PING_ROLE_ID` (optional Discord role ID to ping at message start)
@@ -197,5 +199,7 @@ If `DISCORD_PING_ROLE_ID` is not set, the message is sent without a role mention
 ## Notes
 
 - `Get Streams` returns only currently live streams; offline channels are not included.
-- The app keeps in-memory state of currently live users to detect offline->live transitions.
+- The app waits until a stream has been live for `LIVE_NOTIFY_DELAY_SECONDS` before sending a notification.
+- The app de-duplicates notifications per streamer and Twitch `started_at` stream session while it is running.
+- The app keeps in-memory state of currently live users to detect offline->live transitions, and confirms offline status after `OFFLINE_CONFIRMATION_POLLS` consecutive missing polls.
 - Restarting the app resets that in-memory state.

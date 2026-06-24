@@ -32,6 +32,8 @@ async function main() {
     webhookClient,
     gameId,
     pollIntervalSeconds: config.pollIntervalSeconds,
+    offlineConfirmationPolls: config.offlineConfirmationPolls,
+    liveNotifyDelaySeconds: config.liveNotifyDelaySeconds,
     startupNotifyExistingLive: config.startupNotifyExistingLive
   });
 

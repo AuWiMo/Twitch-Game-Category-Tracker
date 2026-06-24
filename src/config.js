@@ -82,6 +82,8 @@ function loadConfig() {
     webhookUrl: cliOverrides.webhookUrl || process.env.WEBHOOK_URL,
     discordPingRoleId: process.env.DISCORD_PING_ROLE_ID,
     pollIntervalSeconds: parsePositiveInt("POLL_INTERVAL_SECONDS", 60),
+    offlineConfirmationPolls: parsePositiveInt("OFFLINE_CONFIRMATION_POLLS", 5),
+    liveNotifyDelaySeconds: parsePositiveInt("LIVE_NOTIFY_DELAY_SECONDS", 180),
     requestTimeoutMs: parsePositiveInt("REQUEST_TIMEOUT_MS", 15000),
     startupNotifyExistingLive: (process.env.STARTUP_NOTIFY_EXISTING_LIVE || "false").toLowerCase() === "true"
   };

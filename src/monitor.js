@@ -1,16 +1,28 @@
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 class StreamMonitor {
-  constructor({ twitchClient, webhookClient, gameId, pollIntervalSeconds, startupNotifyExistingLive = false }) {
+  constructor({
+    twitchClient,
+    webhookClient,
+    gameId,
+    pollIntervalSeconds,
+    offlineConfirmationPolls = 5,
+    liveNotifyDelaySeconds = 180,
+    startupNotifyExistingLive = false
+  }) {
     this.twitchClient = twitchClient;
     this.webhookClient = webhookClient;
     this.gameId = gameId;
     this.pollIntervalSeconds = pollIntervalSeconds;
+    this.offlineConfirmationPolls = offlineConfirmationPolls;
+    this.liveNotifyDelaySeconds = liveNotifyDelaySeconds;
     this.startupNotifyExistingLive = startupNotifyExistingLive;
     this.running = false;
     this.currentLiveUsers = new Set();
     this.currentLiveUserNames = new Map();
     this.consecutiveMisses = new Map();
+    this.handledStreamSessions = new Map();
+    this.invalidStartedAtWarnings = new Map();
     this.hasBaseline = false;
     this.heartbeatLineActive = false;
     this.resolveStopSignal = null;
@@ -64,6 +76,45 @@ class StreamMonitor {
     console.log(message);
   }
 
+  getValidStartedAtMs(stream) {
+    const startedAt = stream.started_at;
+    if (!startedAt) {
+      return null;
+    }
+
+    const startedAtMs = Date.parse(startedAt);
+    if (Number.isNaN(startedAtMs)) {
+      return null;
+    }
+
+    return startedAtMs;
+  }
+
+  warnInvalidStartedAt(stream) {
+    const userId = String(stream.user_id);
+    const startedAt = stream.started_at || "";
+
+    if (this.invalidStartedAtWarnings.get(userId) === startedAt) {
+      return;
+    }
+
+    const streamerName = stream.user_name || stream.user_login || "unknown_streamer";
+    this.logEvent(`[tracker] Skipping notification for ${streamerName}: invalid started_at value.`);
+    this.invalidStartedAtWarnings.set(userId, startedAt);
+  }
+
+  markCurrentSessionsHandled(streams) {
+    for (const stream of streams) {
+      const userId = String(stream.user_id);
+      if (this.getValidStartedAtMs(stream) === null) {
+        this.warnInvalidStartedAt(stream);
+        continue;
+      }
+
+      this.handledStreamSessions.set(userId, stream.started_at);
+    }
+  }
+
   async pollOnce() {
     const streams = await this.twitchClient.getStreamsByGameId(this.gameId);
     const liveUserIdsNow = new Set(streams.map((item) => String(item.user_id)));
@@ -80,18 +131,32 @@ class StreamMonitor {
       this.currentLiveUsers = liveUserIdsNow;
       this.currentLiveUserNames = liveUserNamesNow;
       this.consecutiveMisses = new Map();
+      this.markCurrentSessionsHandled(streams);
       this.hasBaseline = true;
       this.emitHeartbeatDot();
       return;
     }
 
+    const now = Date.now();
     const notifyCandidates = streams.filter((stream) => {
       const userId = String(stream.user_id);
-      return !this.currentLiveUsers.has(userId);
+      const startedAtMs = this.getValidStartedAtMs(stream);
+      if (startedAtMs === null) {
+        this.warnInvalidStartedAt(stream);
+        return false;
+      }
+
+      if (this.handledStreamSessions.get(userId) === stream.started_at) {
+        return false;
+      }
+
+      return now - startedAtMs >= this.liveNotifyDelaySeconds * 1000;
     });
+    let failedNotification = null;
 
     const notifyTasks = notifyCandidates.map(async (stream) => {
       await this.webhookClient.sendStreamLive({ stream, gameId: this.gameId });
+      this.handledStreamSessions.set(String(stream.user_id), stream.started_at);
       const timestamp = new Date().toISOString();
       const streamerName = stream.user_name || stream.user_login || "unknown_streamer";
       this.logEvent(`[tracker] ${timestamp} ${streamerName} has gone live! There are now ${streams.length} people playing!`);
@@ -106,7 +171,7 @@ class StreamMonitor {
 
       const failed = results.find((result) => result.status === "rejected");
       if (failed) {
-        throw failed.reason;
+        failedNotification = failed.reason;
       }
     }
 
@@ -119,7 +184,7 @@ class StreamMonitor {
       const nextMissCount = (this.consecutiveMisses.get(userId) || 0) + 1;
       this.consecutiveMisses.set(userId, nextMissCount);
 
-      if (nextMissCount >= 2) {
+      if (nextMissCount >= this.offlineConfirmationPolls) {
         const timestamp = new Date().toISOString();
         const streamerName = this.currentLiveUserNames.get(userId) || userId;
         this.logEvent(`[tracker] ${timestamp} ${streamerName} has stopped streaming.`);
@@ -140,6 +205,10 @@ class StreamMonitor {
 
     if (!hadVisibleChanges) {
       this.emitHeartbeatDot();
+    }
+
+    if (failedNotification) {
+      throw failedNotification;
     }
   }
 }
